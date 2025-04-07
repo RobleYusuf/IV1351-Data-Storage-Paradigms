@@ -1,0 +1,131 @@
+-- Contact Persons
+INSERT INTO ContactPerson (name, email, phone) VALUES
+('Jane Doe', 'jane.doe@example.com', '0701234567'),
+('Mark Green', 'mark.green@example.com', '0702345678');
+
+-- Students
+INSERT INTO Student (person_number, name, address, email, phone, contact_person_id) VALUES
+('20000101-1111', 'Alice Doe', 'Street 1', 'alice.doe@example.com', '0700000001', 1),
+('20000202-2222', 'Bob Doe', 'Street 1', 'bob.doe@example.com', '0700000002', 1),
+('20000303-3333', 'Charlie Green', 'Street 2', 'charlie.green@example.com', '0700000003', 2),
+('20000404-4444', 'Diana Green', 'Street 2', 'diana.green@example.com', '0700000004', 2),
+('20000505-5555', 'Eve Solo', 'Street 3', 'eve.solo@example.com', '0700000005', NULL),
+('20000606-6666', 'Frank Solo', 'Street 4', 'frank.solo@example.com', '0700000006', NULL),
+('20000707-7777', 'Grace Twin1', 'Street 5', 'grace.twin@example.com', '0700000007', NULL),
+('20000808-8888', 'Hank Twin2', 'Street 5', 'hank.twin@example.com', '0700000008', NULL),
+('20000909-9999', 'Ivy Trio1', 'Street 6', 'ivy.trio@example.com', '0700000009', NULL),
+('20001010-1010', 'Jake Trio2', 'Street 6', 'jake.trio@example.com', '0700000010', NULL),
+('20001111-1111', 'Kara Trio3', 'Street 6', 'kara.trio@example.com', '0700000011', NULL);
+
+-- Sibling relationships (self-ref)
+INSERT INTO SiblingStudent (student_id, sibling_id) VALUES
+(1, 2),  -- Alice & Bob
+(3, 4),  -- Charlie & Diana
+(7, 8),  -- Grace & Hank (twins)
+(9, 10), (9, 11), (10, 11);  -- Ivy, Jake, Kara (trio)
+
+-- Instructors
+INSERT INTO Instructor (person_number, name, address, email, phone) VALUES
+('19700101-0001', 'Albus Dumbledore', 'Hogwarts', 'albus@example.com', '0700000111'),
+('19710101-0002', 'Minerva McGonagall', 'Hogwarts', 'minerva@example.com', '0700000222'),
+('19720101-0003', 'Severus Snape', 'Hogwarts', 'severus@example.com', '0700000333');
+
+-- Administrative Staff
+INSERT INTO AdministrativeStaff (person_number, name, address, email, phone) VALUES
+('19600101-9999', 'Admin One', 'HQ', 'admin1@example.com', '0709999999');
+
+-- Instruments
+INSERT INTO Instrument (name, type, brand, quantity_in_stock) VALUES
+('Piano', 'Keyboard', 'Yamaha', 5),
+('Violin', 'String', 'Stentor', 10),
+('Drums', 'Percussion', 'Pearl', 3);
+
+-- Instrument Rental Prices
+INSERT INTO InstrumentRentalPrice (instrument_id, monthly_price, start_date, end_date) VALUES
+(1, 300.00, '2024-01-01', NULL),
+(2, 150.00, '2024-01-01', NULL),
+(3, 250.00, '2024-01-01', NULL);
+
+-- Rental Agreements
+INSERT INTO RentalAgreement (student_id, instrument_id, start_date, end_date) VALUES
+(1, 1, '2024-10-01', '2024-12-01'),
+(3, 2, '2024-11-01', '2024-12-15'),
+(9, 3, '2024-12-01', '2025-01-01');
+
+-- Lesson Prices
+INSERT INTO LessonPrice (level, type, price, start_date, end_date) VALUES
+('beginner', 'individual', 200.00, '2024-01-01', NULL),
+('intermediate', 'group', 150.00, '2024-01-01', NULL),
+('advanced', 'ensemble', 100.00, '2024-01-01', NULL);
+
+-- Booking Schedules
+INSERT INTO BookingSchedule (room, time_slot, administrative_staff_id) VALUES
+('Room A', '2024-10-15 10:00:00', 1),
+('Room B', '2024-11-20 14:00:00', 1),
+('Room C', '2024-12-10 15:00:00', 1);
+
+-- Lessons (different types and spread over different months)
+INSERT INTO Lesson (lesson_price_id, instrument_id, instructor_id, booking_schedule_id, date_time, end_time, level, is_group_lesson, is_ensemble) VALUES
+(1, 1, 1, 1, '2024-10-15 10:00:00', '2024-10-15 11:00:00', 'beginner', FALSE, FALSE),
+(2, 2, 2, 2, '2024-11-20 14:00:00', '2024-11-20 15:00:00', 'intermediate', TRUE, FALSE),
+(3, 3, 3, 3, '2024-12-10 15:00:00', '2024-12-10 16:00:00', 'advanced', TRUE, TRUE),
+(2, 2, 1, 2, '2024-12-12 14:00:00', '2024-12-12 15:00:00', 'intermediate', TRUE, FALSE),
+(1, 1, 1, 1, '2024-12-13 10:00:00', '2024-12-13 11:00:00', 'beginner', FALSE, FALSE),
+(3, 3, 2, 3, '2024-12-14 15:00:00', '2024-12-14 16:00:00', 'advanced', TRUE, TRUE);
+
+Explain ANALYZE
+SELECT
+    DATE_FORMAT(date_time, '%Y-%m') AS month,
+    COUNT(*) AS total_lessons,
+    SUM(CASE WHEN is_group_lesson = FALSE AND is_ensemble = FALSE THEN 1 ELSE 0 END) AS individual_lessons,
+    SUM(CASE WHEN is_group_lesson = TRUE AND is_ensemble = FALSE THEN 1 ELSE 0 END) AS group_lessons,
+    SUM(CASE WHEN is_ensemble = TRUE THEN 1 ELSE 0 END) AS ensemble_lessons
+FROM Lesson
+WHERE YEAR(date_time) = 2024
+GROUP BY month
+ORDER BY month;
+
+SELECT
+    sibling_count,
+    COUNT(*) AS number_of_students
+FROM (
+    SELECT
+        s.id,
+        COUNT(ss.sibling_id) AS sibling_count
+    FROM Student s
+    LEFT JOIN SiblingStudent ss ON s.id = ss.student_id
+    GROUP BY s.id
+) AS sibling_counts
+GROUP BY sibling_count
+ORDER BY sibling_count;
+
+SELECT
+    i.id AS instructor_id,
+    i.name AS first_name,
+    COUNT(l.id) AS number_of_lessons
+FROM Instructor i
+JOIN Lesson l ON l.instructor_id = i.id
+WHERE MONTH(l.date_time) = 12  -- December
+  AND YEAR(l.date_time) = 2024
+GROUP BY i.id, i.name
+HAVING COUNT(l.id) > 1
+ORDER BY number_of_lessons DESC;
+
+
+SELECT
+    DAYNAME(l.date_time) AS day,
+    lp.type AS genre,
+    CASE
+        WHEN COUNT(p.student_id) >= 5 THEN 'No Seats'
+        WHEN COUNT(p.student_id) BETWEEN 3 AND 4 THEN '1 or 2 Seats'
+        ELSE 'Many Seats'
+    END AS free_seats_status
+FROM Lesson l
+JOIN LessonPrice lp ON l.lesson_price_id = lp.id
+LEFT JOIN LessonParticipation p ON p.lesson_id = l.id
+WHERE l.is_ensemble = TRUE
+  AND l.date_time BETWEEN '2024-12-01' AND '2024-12-31'
+GROUP BY l.id
+ORDER BY genre, day;
+
+
