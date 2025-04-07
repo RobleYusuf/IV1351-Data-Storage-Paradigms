@@ -1,0 +1,176 @@
+-- Create the database
+CREATE DATABASE IF NOT EXISTS SoundgoodMusicSchool;
+USE SoundgoodMusicSchool;
+
+-- ContactPerson
+CREATE TABLE ContactPerson (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100),
+    phone VARCHAR(20)
+) ENGINE=InnoDB;
+
+-- Student
+CREATE TABLE Student (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    person_number VARCHAR(20) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    address VARCHAR(200),
+    email VARCHAR(100),
+    phone VARCHAR(20),
+    contact_person_id INT,
+    FOREIGN KEY (contact_person_id) REFERENCES ContactPerson(id)
+) ENGINE=InnoDB;
+
+-- Instructor
+CREATE TABLE Instructor (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    person_number VARCHAR(20) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    address VARCHAR(200),
+    email VARCHAR(100),
+    phone VARCHAR(20)
+) ENGINE=InnoDB;
+
+-- AdministrativeStaff
+CREATE TABLE AdministrativeStaff (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    person_number VARCHAR(20) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    address VARCHAR(200),
+    email VARCHAR(100),
+    phone VARCHAR(20)
+) ENGINE=InnoDB;
+
+-- Instrument
+CREATE TABLE Instrument (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    type VARCHAR(50),
+    brand VARCHAR(50),
+    quantity_in_stock INT
+) ENGINE=InnoDB;
+
+-- InstrumentRentalPrice
+CREATE TABLE InstrumentRentalPrice (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    instrument_id INT NOT NULL,
+    monthly_price DECIMAL(7,2) NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE,
+    FOREIGN KEY (instrument_id) REFERENCES Instrument(id)
+) ENGINE=InnoDB;
+
+-- RentalAgreement
+CREATE TABLE RentalAgreement (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    instrument_id INT NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE,
+    FOREIGN KEY (student_id) REFERENCES Student(id),
+    FOREIGN KEY (instrument_id) REFERENCES Instrument(id)
+) ENGINE=InnoDB;
+
+-- LessonPrice
+CREATE TABLE LessonPrice (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    level VARCHAR(20),
+    type VARCHAR(20),
+    price DECIMAL(7,2) NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE
+) ENGINE=InnoDB;
+
+-- BookingSchedule
+CREATE TABLE BookingSchedule (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    room VARCHAR(50),
+    time_slot DATETIME NOT NULL,
+    administrative_staff_id INT NOT NULL,
+    FOREIGN KEY (administrative_staff_id) REFERENCES AdministrativeStaff(id)
+) ENGINE=InnoDB;
+
+-- Lesson
+CREATE TABLE Lesson (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    lesson_price_id INT NOT NULL,
+    instrument_id INT NOT NULL,
+    instructor_id INT NOT NULL,
+    booking_schedule_id INT,
+    date_time DATETIME NOT NULL,
+    end_time DATETIME,
+    level VARCHAR(20),
+    is_group_lesson BOOLEAN NOT NULL,
+    is_ensemble BOOLEAN NOT NULL,
+    FOREIGN KEY (lesson_price_id) REFERENCES LessonPrice(id),
+    FOREIGN KEY (instrument_id) REFERENCES Instrument(id),
+    FOREIGN KEY (instructor_id) REFERENCES Instructor(id),
+    FOREIGN KEY (booking_schedule_id) REFERENCES BookingSchedule(id)
+) ENGINE=InnoDB;
+
+-- LessonParticipation
+CREATE TABLE LessonParticipation (
+    lesson_id INT NOT NULL,
+    student_id INT NOT NULL,
+    attendance_status VARCHAR(20),
+    registered_at DATETIME,
+    PRIMARY KEY (lesson_id, student_id),
+    FOREIGN KEY (lesson_id) REFERENCES Lesson(id),
+    FOREIGN KEY (student_id) REFERENCES Student(id)
+) ENGINE=InnoDB;
+
+-- SiblingStudent
+CREATE TABLE SiblingStudent (
+    student_id INT NOT NULL,
+    sibling_id INT NOT NULL,
+    PRIMARY KEY (student_id, sibling_id),
+    FOREIGN KEY (student_id) REFERENCES Student(id),
+    FOREIGN KEY (sibling_id) REFERENCES Student(id),
+    CHECK (student_id < sibling_id)
+) ENGINE=InnoDB;
+
+-- Dummy Data Inserts
+INSERT INTO ContactPerson (name, email, phone)
+VALUES ('Lisa Green', 'lisa.green@example.com', '0701234567');
+
+INSERT INTO Student (person_number, name, address, email, phone, contact_person_id)
+VALUES ('20010101-1234', 'Emma Green', '1 Music Ave', 'emma@example.com', '0709876543', 1),
+       ('20020101-5678', 'Oliver Green', '1 Music Ave', 'oliver@example.com', '0709876544', 1);
+
+INSERT INTO Instructor (person_number, name, address, email, phone)
+VALUES ('19800505-1111', 'James Brown', '5 Jazz Street', 'james.brown@example.com', '0709988776');
+
+INSERT INTO AdministrativeStaff (person_number, name, address, email, phone)
+VALUES ('19860101-2222', 'Sarah Admin', '9 Admin Blvd', 'sarah.admin@example.com', '0702233445');
+
+INSERT INTO Instrument (name, type, brand, quantity_in_stock)
+VALUES ('Piano', 'Keyboard', 'Yamaha', 3),
+       ('Violin', 'String', 'Stentor', 5);
+
+INSERT INTO InstrumentRentalPrice (instrument_id, monthly_price, start_date, end_date)
+VALUES (1, 300.00, '2025-01-01', NULL),
+       (2, 150.00, '2025-01-01', NULL);
+
+INSERT INTO RentalAgreement (student_id, instrument_id, start_date, end_date)
+VALUES (1, 1, '2025-03-01', '2025-07-01'),
+       (2, 2, '2025-03-15', '2025-08-15');
+
+INSERT INTO LessonPrice (level, type, price, start_date, end_date)
+VALUES ('beginner', 'individual', 200.00, '2025-01-01', NULL),
+       ('intermediate', 'group', 150.00, '2025-01-01', NULL);
+
+INSERT INTO BookingSchedule (room, time_slot, administrative_staff_id)
+VALUES ('Room 1', '2025-04-20 10:00:00', 1),
+       ('Room 2', '2025-04-22 14:00:00', 1);
+
+INSERT INTO Lesson (lesson_price_id, instrument_id, instructor_id, booking_schedule_id, date_time, end_time, level, is_group_lesson, is_ensemble)
+VALUES (1, 1, 1, 1, '2025-04-20 10:00:00', '2025-04-20 11:00:00', 'beginner', FALSE, FALSE),
+       (2, 2, 1, 2, '2025-04-22 14:00:00', '2025-04-22 15:00:00', 'intermediate', TRUE, FALSE);
+
+INSERT INTO LessonParticipation (lesson_id, student_id, attendance_status, registered_at)
+VALUES (1, 1, 'attended', '2025-04-15 12:00:00'),
+       (2, 2, 'registered', '2025-04-16 13:30:00');
+
+INSERT INTO SiblingStudent (student_id, sibling_id)
+VALUES (1, 2);  -- Emma is sibling of Oliver
